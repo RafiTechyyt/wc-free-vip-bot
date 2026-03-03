@@ -1,43 +1,45 @@
-import sqlite3
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from datetime import datetime
+import os
+import psycopg2
+from psycopg2 import errors
 
 # ==============================
 # CONFIG
 # ==============================
 
-import os
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = os.getenv("ADMIN_IDS")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not BOT_TOKEN or not ADMIN_IDS:
+if not BOT_TOKEN or not ADMIN_IDS or not DATABASE_URL:
     raise ValueError("Environment variables not set properly.")
-ADMIN_IDS = [int(x) for x in ADMIN_IDS.split(",")]
+
+ADMIN_IDS = [int(x.strip()) for x in ADMIN_IDS.split(",")]
 
 def is_admin(update):
     return update.effective_user.id in ADMIN_IDS
 
 async def admin_only(update: Update):
     await update.message.reply_text("Access denied.")
+
 # ==============================
 # DATABASE SETUP
 # ==============================
 
-conn = sqlite3.connect('members.db', check_same_thread=False)
+conn = psycopg2.connect(DATABASE_URL)
+conn.autocommit = True
 cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    uid TEXT UNIQUE,
+    id SERIAL PRIMARY KEY,
+    uid TEXT UNIQUE NOT NULL,
     telegram_username TEXT,
-    added_date TEXT
+    added_date TIMESTAMP NOT NULL
 )
 """)
-conn.commit()
-
 
 # ==============================
 # COMMANDS
@@ -55,12 +57,13 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         cursor.execute(
-            "INSERT INTO members (uid, telegram_username, added_date) VALUES (?, ?, ?)",
-            (uid, username, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            "INSERT INTO members (uid, telegram_username, added_date) VALUES (%s, %s, %s)",
+            (uid, username, datetime.now())
         )
-        conn.commit()
         await update.message.reply_text("Member added successfully.")
-    except sqlite3.IntegrityError:
+
+    except errors.UniqueViolation:
+        conn.rollback()
         await update.message.reply_text("Duplicate UID detected.")
 
 async def get_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -73,9 +76,10 @@ async def get_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = context.args[0]
 
     cursor.execute(
-        "SELECT uid, telegram_username, added_date FROM members WHERE uid=? OR telegram_username=?",
+        "SELECT uid, telegram_username, added_date FROM members WHERE uid=%s OR telegram_username=%s",
         (query, query)
     )
+
     result = cursor.fetchone()
 
     if result:
