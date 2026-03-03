@@ -8,11 +8,19 @@ from datetime import datetime
 # ==============================
 
 import os
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-if not BOT_TOKEN or not ADMIN_ID:
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_IDS = os.getenv("ADMIN_IDS")
+
+if not BOT_TOKEN or not ADMIN_IDS:
     raise ValueError("Environment variables not set properly.")
+ADMIN_IDS = [int(x) for x in ADMIN_IDS.split(",")]
+
+def is_admin(update):
+    return update.effective_user.id in ADMIN_IDS
+
+async def admin_only(update: Update):
+    await update.message.reply_text("Access denied.")
 # ==============================
 # DATABASE SETUP
 # ==============================
@@ -30,15 +38,6 @@ CREATE TABLE IF NOT EXISTS members (
 """)
 conn.commit()
 
-# ==============================
-# ADMIN CHECK
-# ==============================
-
-def is_admin(update: Update):
-    return update.effective_user.id == ADMIN_ID
-
-async def admin_only(update: Update):
-    await update.message.reply_text("Access denied.")
 
 # ==============================
 # COMMANDS
