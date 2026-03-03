@@ -2,8 +2,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from datetime import datetime
 import os
-import psycopg2
-from psycopg2 import errors
+import psycopg
+from psycopg.errors import UniqueViolation
 
 # ==============================
 # CONFIG
@@ -28,7 +28,7 @@ async def admin_only(update: Update):
 # DATABASE SETUP
 # ==============================
 
-conn = psycopg2.connect(DATABASE_URL)
+conn = psycopg.connect(DATABASE_URL)
 conn.autocommit = True
 cursor = conn.cursor()
 
@@ -62,7 +62,7 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text("Member added successfully.")
 
-    except errors.UniqueViolation:
+    except UniqueViolation:
         conn.rollback()
         await update.message.reply_text("Duplicate UID detected.")
 
