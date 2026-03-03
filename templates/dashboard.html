@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-4">
+    <h2>Member Dashboard</h2>
+
+    <div class="card p-3 mb-3">
+        <strong>Total Members:</strong> {{ total }}
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>UID</th>
+                <th>Telegram</th>
+                <th>Added</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in members %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>
+                    <a href="/delete/{{ row[0] }}" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <nav>
+        <ul class="pagination">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="/?page={{ page-1 }}">Previous</a>
+            </li>
+            {% endif %}
+            <li class="page-item">
+                <span class="page-link">Page {{ page }}</span>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="/?page={{ page+1 }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
