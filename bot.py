@@ -11,7 +11,8 @@ import os
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-
+if not BOT_TOKEN or not ADMIN_ID:
+    raise ValueError("Environment variables not set properly.")
 # ==============================
 # DATABASE SETUP
 # ==============================
